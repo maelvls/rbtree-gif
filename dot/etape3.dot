@@ -1,0 +1,12 @@
+digraph G { 
+	18 [color=black];
+	18 -> 0;
+	0 [color=black];
+	18 -> 19;
+	19 [color=black];
+	0 [color=black];
+	19 [color=black];
+	19 -> 23;
+	23 [color=red];
+	23 [color=red];
+}
