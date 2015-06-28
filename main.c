@@ -36,10 +36,10 @@ int main(int argc, const char *argv[])
 		if(argv[i][0] != '-') {
 			strcpy(dossier,argv[i]); /* c'est le nom du dossier */
 		}
-		if(0==strcmp(argv[i],"-h")) {
+		if(0==strcmp(argv[i],"-h") || 0==strcmp(argv[i],"--help")) {
 			printf("Usage: %s [-h][dossier][-r racine] \n",argv[0]);
 			printf("Par defaut, le dossier est '%s'\n",DOSSIER_DOT);
-			printf("-h pour l'aide\n");
+			printf("-h ou --help pour l'aide\n");
 			exit(0);
 		}
 		if(strcmp(argv[i],"-r")==0) {
