@@ -13,7 +13,9 @@ puis
 et enfin
 	./dot_to_gif.sh -d dot etape
 
-et _animation.gif_ pourra être ouvert !
+et _animation.gif_ pourra être ouvert ! Voilà un exemple de ce que ça donne :
+
+![Animation du comportement d'un arbre de recherche rouge-noir](https://raw.githubusercontent.com/maelvalais/comportement-arbre-rouge-noir-avec-dot/master/exemple_animation.gif)
 
 # Ecriture de dot\_to\_gif.sh
 J'ai écrit ce script pour me simplifier la vie lors de la visualisation. Il utilise _dot_ et _convert_.
