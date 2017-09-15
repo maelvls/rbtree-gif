@@ -1,150 +1,243 @@
-#! /bin/bash
+#! /usr/bin/env bash
 #
-# dottogif.sh
-# Copyright (C) 2013 Mael Valais <mael.valais@univ-tlse3.fr>
+# (MIT license)
+# Copyright 2013 Mael Valais <mael.valais@gmail.fr>
 #
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
 #
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
 
-IN=etape #.dot
+
 OUT=animation.gif
-TEMP=tempimage
-FILETYPE=gif
+TIME=100 # in milliseconds
+OPT_RM_INTERMEDIATES=1 # 0 = no
+WATERMARK=""
+LOOP=0 # The resulting GIF should loop (0=no)
 
-DOT_DIR=.
+function help() {
+cat <<EOF
+Usage: $(basename $0) INPUT [INPUT...] [-o FILE] [-t TIMEMS] [options]
 
-TIME=100 # en millisecondes
+Description;
+    $(basename $0) allows you to create a GIF using a set of DOT files.
 
-OPT_KEEP_PIC=0 # 0 = non
-OPT_OPEN=0 # ouvre avec open le gif 
-OPT_RM_ROOT_FILES=0 # supprime les IN
+Options:
+    INPUT      Files in dot format used for creating the GIF. The order
+               of the INPUT arguments will be used for the order of images
+               in the GIF.
+    -o FILE    Give a different name to the ouput GIF [default: $OUT]
+    -t MS      Set the time (in milliseconds) between two images in
+               the GIF [default: ${TIME}].
+    -w TEXT    Add some text on bottom-right of the GIF [default: $WATERMARK]
+    -k         Keep the intermediate PNG files
+    -l         Enable loop playing of the produced GIF
 
-
-SCRIPT=script_tree_joli.dot
-
-LOOP=0 # si ça joue en boucle ou pas (0=oui)
+Author:
+    Mael Valais <mael.valais@gmail.com>
+EOF
+}
 
 if ! which dot > /dev/null; then
-	echo "dot n'est pas installe... Installez le paquet 'graphviz''" 2>&1
+cat <<EOF >&2
+Error: 'dot' not found, Graphviz is probably not installed.
+To install it on macOS:
+    brew install graphviz
+On ubuntu:
+    sudo apt-get install graphviz
+EOF
 	exit 1
 fi
 if ! which convert > /dev/null; then
-	echo "convert n'est pas installe... Installez le paquet 'ImageMagick'"
-	exit 1
-fi
-if [ ! -f "$SCRIPT" ]; then
-	echo "Le script $SCRIPT ne semble pas present"
+cat <<EOF >&2
+Error: 'convert' not found, ImageMagick is probably not installed.
+To install it on macOS:
+    brew install imagemagick
+On ubuntu:
+    sudo apt-get install imagemagick
+EOF
 	exit 1
 fi
 
 if [ $# -eq 0 ]; then
-	echo "Usage: $0 [-k][-c][-o] racine (voir --help)" 2>&1
+	help | head -1 >&2
 	exit 1
 fi
+
+# Nb of dot files
+nb_inputs=0
+inputs=
+
 while [ "$1" ]; do
 	case "$1" in
 		"--keep" | "-k")
-			OPT_KEEP_PIC=1;;
-		"--open" | "-o")
-			OPT_OPEN=1;;
-		"-c"| "--clean")
-			OPT_RM_ROOT_FILES=1;;
+			OPT_RM_INTERMEDIATES=1;;
 		"--help"|"-h")
-			echo "`basename $0` : transformer une serie de .dot en un gif anime"
-			echo "==== Options : ===="
-			echo "   -k pour garder les images temporaires"
-			echo "   -c pour supprimer les fichiers d'entree (contenant la racine)"
-			echo "   -o pour ouvrir le gif directement apres avec la commande open"
-			echo " 	 -d pour modifier le chemin de travail du script (fichiers ${IN}.dot et ${TEMP}.${FILETYPE})"
-			echo "==== Pour 'racine' : ===="
-			echo "   C'est en fait la racine des fichier .dot qu'on veut modeliser"
-			echo "   Par exemple, si les fichiers sont fichierDot0.dot, fichierDot1.dot..."
-			echo "   alors on appelera : $0 fichierDot"
-			echo "   ATTENTION : le premier fichier .dot doit contenir 0 !"
-			echo "	 La racine par defaut est $IN"
-			echo "Auteur : Mael Valais - mael.valais@univ-tlse3.fr"
-			exit 0
+			help
 			;;
-		"-d" ) # ou chercher les .dot
+		"-l")
+			LOOP=1
+			;;
+		"-o" ) # Name of the gif file
 			if [ "$2" ]; then
-				DOT_DIR="$2"
+				OUT="$2"
 				shift
-			else 
-				echo "Erreur: l'option -d prend un nom de dossier (-h pour l'aide)" 2>&1
+			else
+				echo "Error: -o needs a file path" >&1
+				help | head -1 >&2
 				exit 1
 			fi
 			;;
+		"-t" ) # Time (in ms) between images
+			if [ "$2" ]; then
+				TIME="$2"
+				shift
+			else
+				echo "Error: -t needs an argument" >&1
+				help | head -1 >&2
+				exit 1
+			fi
+			;;
+		"-w" ) # Watermark in GIF
+			if [ "$2" ]; then
+				WATERMARK="$2"
+				shift
+			else
+				echo "Error: -w needs an argument" >&1
+				help | head -1 >&2
+				exit 1
+			fi
+			;;
+		-? | --*)
+			echo "Error: unknown flag $1" >&2
+			exit 1
+			;;
 		*)
-			IN="$1";;
+			(( nb_inputs++ ))
+			inputs[$nb_inputs]="$1"
+			intermediates[$nb_inputs]="$1.png"
 	esac
 	shift
 done
 
-if [ ! -d "$DOT_DIR" ]; then
-	echo "Erreur: le dossier $DOT_DIR n'existe pas (-h pour l'aide)" 2>&1
+if [ $nb_inputs -eq 0 ]; then
+	echo "Error: missing FILE [FILE...]" >&2
+	help | head -1 >&2
 	exit 1
 fi
 
+cat <<"EOF" > /tmp/script.dot
+// script par Emden R. Gansner
+// trouve sur http://stackoverflow.com/questions/10902745/enforcing-horizontal-node-ordering-in-a-dot-tree
 
-if [ ! "$IN" ]; then
-	echo "Usage: $0 [-k][-c][-o] racine (voir --help)" 2>&1
-	exit 1
-fi
-
-if ! ls $DOT_DIR | grep "$IN" > /dev/null; then
-	echo "La racine $IN n'est contenue dans aucun fichier ! (-h pour l'aide)" 2>&1
-	echo "Le premier fichier doit etre ${IN}0.dot" 2>&1
-	exit 2
-fi
-
-test=`ls $DOT_DIR | grep "$IN" | while read a; do echo $a | grep -v "\.dot"; done`
-if [ "$test" ]; then
-	echo "Erreur: le fichier $test comprenant cette racine est erroné (-h pour l'aide)" 2>&1
-	exit 2
-fi
+BEGIN {
+  double tw[node_t];    // width of tree rooted at node
+  double nw[node_t];    // width of node
+  double xoff[node_t];  // x offset of root from left side of its tree
+  double sp = 36;       // extra space between left and right subtrees
+  double wd, w, w1, w2;
+  double x, y, z;
+  edge_t e1, e2;
+  node_t n;
+}
+BEG_G {
+  $.bb = "";
+  $tvtype=TV_postfwd;   // visit root after all children visited
+}
+N {
+  sscanf ($.width, "%f", &w);
+  w *= 72;  // convert inches to points
+  nw[$] = w;
+  if ($.outdegree == 0) {
+    tw[$] = w;
+    xoff[$] = w/2.0;
+  }
+  else if ($.outdegree == 1) {
+    e1 = fstout($);
+    w1 = tw[e1.head];
+    tw[$] = w1 + (sp+w)/2.0;
+    if (e1.side == "left")
+      xoff[$] = tw[$] - w/2.0;
+    else
+      xoff[$] = w/2.0;
+  }
+  else {
+    e1 = fstout($);
+    w1 = tw[e1.head];
+    e2 = nxtout(e1);
+    w2 = tw[e2.head];
+    wd = w1 + w2 + sp;
+    if (w > wd)
+      wd = w;
+    tw[$] = wd;
+    xoff[$] = w1 + sp/2.0;
+  }
+}
+BEG_G {
+  $tvtype=TV_fwd;   // visit root first, then children
+}
+N {
+  if ($.indegree == 0) {
+    sscanf ($.pos, "%f,%f", &x, &y);
+    $.pos = sprintf("0,%f", y);
+  }
+  if ($.outdegree == 0) return;
+  sscanf ($.pos, "%f,%f", &x, &y);
+  wd = tw[$];
+  e1 = fstout($);
+  n = e1.head;
+  sscanf (n.pos, "%f,%f", &z, &y);
+  if ($.outdegree == 1) {
+    if (e1.side == "left")
+      n.pos = sprintf("%f,%f",  x - tw[n] - sp/2.0 + xoff[n], y);
+    else
+      n.pos = sprintf("%f,%f", x + sp/2.0 + xoff[n], y);
+  }
+  else {
+    n.pos = sprintf("%f,%f", x - tw[n] - sp/2.0 + xoff[n], y);
+    e2 = nxtout(e1);
+    n = e2.head;
+    sscanf (n.pos, "%f,%f", &z, &y);
+    n.pos = sprintf("%f,%f", x + sp/2.0 + xoff[n], y);
+  }
+}
+EOF
 
 cpt=0
 size_max_x=0
 size_max_y=0
-fichier=${DOT_DIR}/${IN}${cpt}.dot
-while [ -f "$fichier" ]; do
-	if echo $fichier | grep -v '\.dot' > /dev/null; then
-		echo "$fichier n'est pas un fichier .dot correct" 2>&1
-		exit 3
-	fi
-	echo "Traitement de $fichier"
-	dot "$fichier" | gvpr -c -f${SCRIPT} 2> /dev/null | neato -n -Tpng -o ${DOT_DIR}/${TEMP}${cpt}.${FILETYPE}
-	size_temp=`identify "${DOT_DIR}/${TEMP}${cpt}.${FILETYPE}" | cut -d " " -f 3`
+
+for fichier in ${inputs[@]}; do
+	echo "Processing $fichier"
+	dot "$fichier" | gvpr -c -f/tmp/script.dot | neato -n -Tpng -o "${fichier}.png"
+	size_temp=`identify "${fichier}.png" | cut -d " " -f 3`
 	size_temp_x=`echo $size_temp | cut -d 'x' -f1`
 	size_temp_y=`echo $size_temp | cut -d 'x' -f2`
 
 	if [ "$size_temp_x" -gt "$size_max_x" ]; then size_max_x=$size_temp_x; fi
 	if [ "$size_temp_y" -gt "$size_max_y" ]; then size_max_y=$size_temp_y; fi
-	
-	(( cpt++ ))
-	fichier=${DOT_DIR}/${IN}${cpt}.dot
 done
 
-liste=""
-for (( i = 0; i < cpt; i++ )); do
-	liste="${liste} ${DOT_DIR}/${TEMP}${i}.${FILETYPE}"
-done
+echo "Generation of ${OUT} (size: ${size_max_x}x${size_max_y})"
 
-echo "Creation de ${OUT} (taille ${size_max_x}x${size_max_y})..."
-
-convert -delay ${TIME} -loop ${LOOP} -extent ${size_max_x}x${size_max_y} -dispose Background -background white $liste ${OUT}
+convert -delay ${TIME} -loop ${LOOP} -extent ${size_max_x}x${size_max_y} -dispose Background -background white ${intermediates[@]} ${OUT}
 (( size_max_x=$size_max_x-90 ))
 ((size_max_y=$size_max_y-12))
-convert -pointsize 14 -fill red -draw "text $size_max_x,$size_max_y 'par Mael V'" ${OUT} ${OUT} 
+convert -pointsize 14 -fill red -draw "text $size_max_x,$size_max_y '${WATERMARK}'" ${OUT} ${OUT}
 
-if [ $OPT_OPEN -eq 1 ]; then
-	open ${OUT}
+if [ $OPT_RM_INTERMEDIATES -eq 1 ]; then
+	rm ${intermediates[@]}
 fi
-
-if [ $OPT_KEEP_PIC -eq 0 ]; then
-	rm ${liste}
-fi
-
-if [ $OPT_RM_ROOT_FILES -eq 1 ]; then
-	rm ${DOT_DIR}/${IN}*
-fi
-

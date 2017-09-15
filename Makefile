@@ -15,7 +15,7 @@ main: main.o key.o rbtree.o queue.o
 	$(CC) -o $@ -c $< $(OPT)
 
 clean:
-	rm -rf *.o $(EXEC) 
+	rm -rf *.o $(EXEC)
 
 # vim:ft=make
 #

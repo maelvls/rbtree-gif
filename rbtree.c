@@ -2,11 +2,11 @@
  *
  *       Filename:  rbtree.c
  *
- *    Description:  
+ *    Description:
  *
  *        Created:  03-04-2013 14:14
  *
- *         Author:  Mael Valais 
+ *         Author:  Mael Valais
  *         Mail  :	mael.valais@univ-tlse3.fr
  *
  * =========================================================== */
@@ -22,7 +22,7 @@ typedef enum _color {
 } Color;
 
 struct _node {
-	void *key;	
+	void *key;
 	struct _node *left;
 	struct _node *right;
 	struct _node *father;
@@ -43,7 +43,7 @@ RBTree rbtreeCreate(int (*cmp)(const void*, const void*), int (*equal)(const voi
 	RBTree tree = (RBTree)malloc(sizeof(struct _rbtree));
 	tree->cmp = cmp;
 	tree->equal = equal;
-	
+
 	/* ============ création du nil ============ */
 	tree->nil = (Node)malloc(sizeof(struct _node));
 	tree->nil->left = tree->nil->right = tree->nil->father = tree->nil;
@@ -55,7 +55,7 @@ RBTree rbtreeCreate(int (*cmp)(const void*, const void*), int (*equal)(const voi
 	tree->root->left = tree->root->right = tree->root->father = tree->nil;
 	tree->root->color = black;
 	tree->root->key = NULL;
-	
+
 	return(tree);
 }
 
@@ -65,12 +65,12 @@ int rbtreeEmpty(RBTree tree) {
 
 void rbtreeRotateRight(RBTree tree, Node n) {
 	Node m = n->left;
-	
+
 	n->left = m->right; /* on bouge le noeud qui bouge de gauche à droite (B) */
 	m->father = n->father; /* on modifie aussi son père */
-	
+
 	if(n->left != tree->nil) /* on remet le bon pere à B */
-		n->left->father = n; 
+		n->left->father = n;
 
 	if(n->father->left == n) /* le lien vers le fils de la racine est modifie */
 		n->father->left = m;
@@ -83,7 +83,7 @@ void rbtreeRotateRight(RBTree tree, Node n) {
 
 void rbtreeRotateLeft(RBTree tree, Node n) {
 	Node m = n->right;
-	
+
 	n->right = m->left; /* on s'occupe de B qui change de pere */
 	m->father = n->father;
 
@@ -126,20 +126,20 @@ void rbtreeClassicTreeInsert(RBTree tree, Node added) {
 
 void rbtreeInsert(RBTree tree, void *data) {
 	/* ============ Phase 1 : ajout classique ============ */
-	
+
 	Node added = (Node)malloc(sizeof(struct _node));
 	added->key = data;
 	added->left = added->right = tree->nil;
 	added->color = red;
 	rbtreeClassicTreeInsert(tree, added);
-	
+
 	Node uncle;
 	/* ============ Phase 2 : gestion des clashs ============ */
 	while(added->father->color == red) { /* on remonte deux generations à chaque fois */
 		if(added->father == added->father->father->left) { /* ==== CAS GAUCHE ==== */
 			uncle = rbgrandpa(added)->right;
 			/* ============ Cas 1 : l'oncle est rouge, on recolorie ============ */
-			if(uncle->color == red) { 
+			if(uncle->color == red) {
 				added->father->color = uncle->color = black;
 				rbgrandpa(added)->color = red;
 				added = rbgrandpa(added); /* on remonte de deux generations car c'est clean */
@@ -179,15 +179,15 @@ void rbtreeInsert(RBTree tree, void *data) {
 
 
 void rbtreeToDot(RBTree tree, const char* racine, const char* dossier) {
-	assert(!rbtreeEmpty(tree));	
-	
+	assert(!rbtreeEmpty(tree));
+
 	static int numerofichier=0;
 	char final[30];
 	sprintf(final,"%s/%s%d.dot",dossier,racine,numerofichier++);
 	FILE*fd = fopen(final,"wt");
-	
+
 	fprintf(fd,"digraph G { \n");
-	
+
 	Node node;
 	QUEUE queue;
 	queueCreate(&queue);
@@ -228,7 +228,7 @@ void rbtreeToDot(RBTree tree, const char* racine, const char* dossier) {
 }
 
 void rbtreeMapDebug(RBTree tree) {
-	assert(!rbtreeEmpty(tree));	
+	assert(!rbtreeEmpty(tree));
 	Node node;
 	QUEUE queue;
 	queueCreate(&queue);
@@ -271,12 +271,12 @@ void rbtreeMapDebug(RBTree tree) {
 void rbtreeRemove(RBTree tree, void* data) {
 	Node replace, replacefather;
 	Node node = rbfirst(tree);
-	while(!(*tree->equal)(node->key,data)) { 
+	while(!(*tree->equal)(node->key,data)) {
 		node = (*tree->cmp)(node->key,data)?node->right:node->left;
 	}
 	/* node est le noeud à supprimer */
 	if(rbIsLeaf(node)) {
-		if(node->father->right == node) 
+		if(node->father->right == node)
 			node->father->right = tree->nil;
 		else
 			node->father->left = tree->nil;
@@ -289,7 +289,7 @@ void rbtreeRemove(RBTree tree, void* data) {
 				node->father->right = node->right;
 			else
 				node->father->left = node->right;
-			if(rbExists(node->right)) 
+			if(rbExists(node->right))
 				node->right->father = node->father;	/* XXX AJOUTE */
 			replacefather = node->father;
 			replace = node->right;
@@ -299,16 +299,16 @@ void rbtreeRemove(RBTree tree, void* data) {
 				node->father->right = node->left;
 			else
 				node->father->left = node->left;
-			if(rbExists(node->left)) 
-				node->left->father = node->father;	/* XXX AJOUTE */	
+			if(rbExists(node->left))
+				node->left->father = node->father;	/* XXX AJOUTE */
 			replacefather = node->father;
-			replace = node->left;		
+			replace = node->left;
 		}
 		else { /* ==== deux noeuds  ==== */
 			Node temp = node->right;
 			while(temp->left != tree->nil) /* une fois à droite puis tout à gauche */
 				temp = temp->left;
-			node->key = temp->key; 
+			node->key = temp->key;
 			if(temp->father->left == temp) {
 				temp->father->left = temp->right; /* on raccroche l'hypothetique fils droit de temp */
 				if(rbExists(temp->right)) temp->right->father = temp->father;
@@ -326,7 +326,7 @@ void rbtreeRemove(RBTree tree, void* data) {
 	/* (y_father) node->father == replacefather == replace->father (à tous les coups) */
 	/* (y) replace est le noeud qui remplace celui qui a ete supprime */
 	replacefather = node->father;
-	
+
 	if(node->color == black) {
 		if(replace->color == red)
 			replace->color = black;
@@ -343,7 +343,7 @@ void swapColors(Node a, Node b) {
 }
 void mendSentinels(RBTree tree){
 	tree->nil->color = black;
-	tree->root->color = black;	
+	tree->root->color = black;
 }
 void addBlack(Node a, int *isdoubleblack){
 	if(a->color==red) {
@@ -356,9 +356,9 @@ void addBlack(Node a, int *isdoubleblack){
 
 void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather) {
 	/* Soient :
-	 * y : replace, le noeud remplacé 
-	 * p : replacefather, le pere du noeud remplacé 
-	 * f : frere de y 
+	 * y : replace, le noeud remplacé
+	 * p : replacefather, le pere du noeud remplacé
+	 * f : frere de y
 	 * g : fils gauche de f
 	 * d : fils droit de f
 	 * */
@@ -371,8 +371,8 @@ void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather) {
 					//printf("Cas 1.A gauche\n");
 					replace->color = black; /* y devient simple noir */
 					replacefather->right->color = red; /* f devient rouge */
-					addBlack(replacefather,&isdoubleblack); /* p devient double noir */					
-					
+					addBlack(replacefather,&isdoubleblack); /* p devient double noir */
+
 					replace = replacefather; /* y devient p */
 					replacefather = replace->father;
 				}
@@ -399,7 +399,7 @@ void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather) {
 				rbtreeRotateLeft(tree,replacefather); /* rotation gauche en p */
 				/* on revient au cas 1 */
 			}
-		} 
+		}
 
 		else { /* CAS DROIT */
 			if(replacefather->left->color == black) { /* f est noir */
@@ -407,8 +407,8 @@ void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather) {
 					//printf("Cas 1.A droit\n");
 					replace->color = black; /* y devient simple noir */
 					replacefather->left->color = red; /* f devient rouge */
-					addBlack(replacefather,&isdoubleblack); /* p devient double noir */					
-					
+					addBlack(replacefather,&isdoubleblack); /* p devient double noir */
+
 					replace = replacefather; /* y devient p */
 					replacefather = replace->father;
 				}
@@ -436,7 +436,7 @@ void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather) {
 				rbtreeRotateRight(tree,replacefather); /* rotation gauche en p */
 				/* on revient au cas 1 en ne changeant rien */
 			}
-		} 
+		}
 	}
 	mendSentinels(tree);
 }

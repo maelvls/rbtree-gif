@@ -2,11 +2,11 @@
  *
  *       Filename:  main.c
  *
- *    Description:  
+ *    Description:
  *
  *        Created:  06-04-2013 22:39
  *
- *         Author:  Mael Valais 
+ *         Author:  Mael Valais
  *         Mail  :	mael.valais@univ-tlse3.fr
  *
  * =========================================================== */
@@ -20,7 +20,7 @@
 #include <dirent.h>
 
 #define DOSSIER_DOT "dot"
-#define RACINE_DOT "etape"
+#define RACINE_DOT "step_"
 
 #define VERBOSE 	1
 
@@ -29,9 +29,9 @@ int main(int argc, const char *argv[])
 	char dossier[30] = DOSSIER_DOT;
 	char racine[30] = RACINE_DOT;
 	int i,mode=0;
-	DIR *d;	
+	DIR *d;
 
-	/* ==== traitement des parametres ==== */	
+	/* ==== traitement des parametres ==== */
 	for(i=1; i<argc; ++i) {
 		if(argv[i][0] != '-') {
 			strcpy(dossier,argv[i]); /* c'est le nom du dossier */
@@ -65,40 +65,40 @@ int main(int argc, const char *argv[])
 		fprintf(stderr, "Erreur: le dossier '%s' n'existe pas - veuillez le creer (-h pour l'aide)\n",dossier);
 		exit(1);
 	}
-	
-	
 
-	RBTree tree = rbtreeCreate(keyCmp,keyEqual);	
-	int N=0;	
+
+
+	RBTree tree = rbtreeCreate(keyCmp,keyEqual);
+	int N=0;
 	int* tab[100];
 
 	tab[N++] = keyCreer(18);
 	tab[N++] = keyCreer(0);
 	tab[N++] = keyCreer(19);
 	tab[N++] = keyCreer(23);
-	tab[N++] = keyCreer(2);	
+	tab[N++] = keyCreer(2);
 	tab[N++] = keyCreer(24);
 	tab[N++] = keyCreer(10);
-	tab[N++] = keyCreer(3);		
+	tab[N++] = keyCreer(3);
 	tab[N++] = keyCreer(11);
-	tab[N++] = keyCreer(8);	
+	tab[N++] = keyCreer(8);
 	tab[N++] = keyCreer(12);
 	tab[N++] = keyCreer(13);
-	tab[N++] = keyCreer(7);	
+	tab[N++] = keyCreer(7);
 	tab[N++] = keyCreer(14);
 	tab[N++] = keyCreer(20);
-	tab[N++] = keyCreer(4);		
+	tab[N++] = keyCreer(4);
 	tab[N++] = keyCreer(21);
-	tab[N++] = keyCreer(5);	
+	tab[N++] = keyCreer(5);
 	tab[N++] = keyCreer(22);
-	tab[N++] = keyCreer(6);	
+	tab[N++] = keyCreer(6);
 	tab[N++] = keyCreer(15);
-	tab[N++] = keyCreer(9);	
+	tab[N++] = keyCreer(9);
 	tab[N++] = keyCreer(16);
-	tab[N++] = keyCreer(1);		
+	tab[N++] = keyCreer(1);
 	tab[N++] = keyCreer(17);
-	
-	
+
+
 	for(i=0; i<N; i++){
 		rbtreeInsert(tree,tab[i]);
 		rbtreeToDot(tree,racine,dossier);
