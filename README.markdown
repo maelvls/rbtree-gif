@@ -9,7 +9,7 @@ L'objectif est de coder puis de visualiser les différentes étapes de
 rééquilibrage lors d'insertions et de suppressions de noeuds d'un arbre
 binaire de recherche de type *rouge-noir*.
 
-![Animation du comportement d'un arbre de recherche rouge-noir](https://raw.githubusercontent.com/mvalaisalais/comportement-arbre-rouge-noir-avec-dot/master/exemple_animation.gif)
+![Animation du comportement d'un arbre de recherche rouge-noir](https://cdn.rawgit.com/maelvalais/comportement-arbre-rouge-noir-avec-dot/a5affb42/exemple_animation.gif)
 
 ## Instructions de compilation et d'exécution de `a.out`
 Pour tester tout ça, faites simplement
