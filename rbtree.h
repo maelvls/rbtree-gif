@@ -1,18 +1,6 @@
-/* ===========================================================
- *
- *       Filename:  rbtree.h
- *
- *    Description:  
- *
- *        Created:  03-04-2013 14:15
- *
- *         Author:  Mael Valais 
- *         Mail  :	mael.valais@univ-tlse3.fr
- *
- * =========================================================== */
-
-#ifndef __rbtree_h__
-#define __rbtree_h__
+/*
+ * A red-black tree data structure.
+ */
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -35,5 +23,3 @@ void rbtree_to_dot(struct rbtree *tree, const char *racine, const char *dossier)
 void rbtree_map_debug(struct rbtree *tree);
 
 void rbtree_remove(struct rbtree *tree, void *data);
-
-#endif /* !__rbtree_h__ */

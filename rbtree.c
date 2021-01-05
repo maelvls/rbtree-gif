@@ -1,15 +1,17 @@
-/* ===========================================================
+/*
+ * queue.c
  *
- *       Filename:  rbtree.c
+ * A red-black tree data structure stored in a flat array. A few average
+ * time complexities, with n being the number of elements stored:
  *
- *    Description:
+ * algorithm   avg. complexity  worst scenario
+ * ===========================================
+ * insert      O(log n)         O(log n)
+ * search      O(log n)         O(log n)
+ * delete      O(log n)         O(log n)
  *
- *        Created:  03-04-2013 14:14
- *
- *         Author:  Mael Valais
- *         Mail  :	mael.valais@univ-tlse3.fr
- *
- * =========================================================== */
+ * Copyright (C) 2013-2020  Mael Valais
+ */
 
 #include "rbtree.h"
 
@@ -49,13 +51,13 @@ struct rbtree *rbtree_new(int (*cmp)(const void *, const void *), int (*equal)(c
 	tree->cmp = cmp;
 	tree->equal = equal;
 
-	/* ============ création du nil ============ */
+	/* the nil */
 	tree->nil = (struct node *)malloc(sizeof(struct node));
 	tree->nil->left = tree->nil->right = tree->nil->father = tree->nil;
 	tree->nil->color = black;
 	tree->nil->key = NULL;
 
-	/* ============ création du root factice ============ */
+	/* the fake root */
 	tree->root = (struct node *)malloc(sizeof(struct node));
 	tree->root->left = tree->root->right = tree->root->father = tree->nil;
 	tree->root->color = black;
