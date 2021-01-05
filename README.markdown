@@ -1,27 +1,29 @@
-L'arbre de recherche RBTree (arbre rouge-noir)
-============================================
-Ce projet est l'un des devoirs de l'UE *structures de données* de
+# L'arbre de recherche RBTree (arbre rouge-noir)
+
+Ce projet est l'un des devoirs de l'UE _structures de données_ de
 l'université Toulouse III — Paul Sabatier. Je remercie tout
 particulièrement le professeur Mathias Paulin pour ses excellents
 enseignements.
 
 L'objectif est de coder puis de visualiser les différentes étapes de
 rééquilibrage lors d'insertions et de suppressions de noeuds d'un arbre
-binaire de recherche de type *rouge-noir*.
+binaire de recherche de type _rouge-noir_.
 
 ![Animation du comportement d'un arbre de recherche rouge-noir](https://cdn.rawgit.com/maelvalais/comportement-arbre-rouge-noir-avec-dot/a5affb42/exemple_animation.gif)
 
 ## Instructions de compilation et d'exécution de `a.out`
+
 Pour tester tout ça, faites simplement
 
-	make
-	./a.out -d dot -r "step_"
-	./dot_to_gif.sh $(find dot -name "*.dot" | sort -n -t_ -k2)
+    make
+    ./a.out -d dot -r "step_"
+    ./dot_to_gif.sh $(find dot -name "*.dot" | sort -n -t_ -k2)
 
 et `animation.gif` pourra être ouvert ! Un exemple de ce que ça donne est
 affiché en haut de cette page.
 
 ## Ecriture de `dot_to_gif.sh`
+
 J'ai écrit ce script pour me simplifier la vie lors de la visualisation. Il
 utilise `dot` et `convert`. Il traduit les .dot en un unique .gif en
 effectuant un petit réajustement des noeuds pour que ça le fasse bien. Les
@@ -34,15 +36,18 @@ monde puisse s'en sortir.
 Désolé pour le poids des `.gif` résultants, je n'ai pas réussi à les compresser...
 
 ## Écriture de `rbtreeInsert()`
+
 Pas grand chose à dire, je me suis un peu inspiré de l'[implémentation de Todd Miller](http://www.opensource.apple.com/source/sudo/sudo-46/src/redblack.h) concernant
 le type `enum color`. Je trouvais ça sympa, alors je l'ai pris.
 
 ## Écriture de `rbTreeRemove()` (suppression simple)
+
 Premier challenge, pour X raisons j'ai pas mal buté. En réétudiant cas par
 cas, j'ai identifié les soucis, et dans la plupart des cas il s'agissait
 des coutures.
 
 ## Écriture de `rbSolveUnbalancedTree()` (correction de l'arbre après suppression)
+
 Traduire l'algorithme naturel du cours a été le plus difficile. J'ai
 commencé par ajouter un `doubleblack` dans mon `enum Color`. Le soucis posé
 était que dès qu'un noeud était `doubleblack`, impossible de le détecter
@@ -68,12 +73,10 @@ de `rbSolveUnbalancedTree`, l'algo répare la sentinelle `tree->nil`.
 Un DM qui m'aura pris bien 8 heures, en comptant aussi la découverte de
 `dot`, `convert` et tous ces outils. J'ai dû aussi approfondir mes
 connaissances de`gdb` pour arriver à debugger vers la fin. J'ai en outre
-installé `cgdb`, une `text user interface` sous *Ncurses* assez proche du
+installé `cgdb`, une `text user interface` sous _Ncurses_ assez proche du
 fonctionnement de vim.
 
-
-----------
-
+---
 
 Maël Valais <mael.valais@gmail.com>
 Devoir de Structures de Données en L2 info à rendre pour le 22 avril 2013 — UTF8, markdown
