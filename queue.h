@@ -9,8 +9,8 @@
 #ifndef __queue_h__
 #define __queue_h__
 
-typedef struct _queue* QUEUE;
-typedef struct _node* ITEM;
+typedef struct _queue *QUEUE;
+typedef struct _node *ITEM;
 
 void queueCreate(QUEUE *q);
 int queueEmpty(QUEUE q);
@@ -21,4 +21,3 @@ ITEM queueRemove(QUEUE q);
 int queueSize(QUEUE q);
 
 #endif /* !__queue_h__ */
-

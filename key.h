@@ -14,17 +14,14 @@
 #ifndef __key_h__
 #define __key_h__
 
+void *keyCreer(int valeur);
 
-void* keyCreer(int valeur);
+void keySuppr(void *key);
 
-void keySuppr(void* key);
+int keyCmp(const void *key1, const void *key2);
 
-int keyCmp(const void* key1, const void* key2);
+int keyEqual(const void *key1, const void *key2);
 
-int keyEqual(const void* key1, const void* key2);
-
-int keyPut(void* key); /* XXX DEBUG */
+int keyPut(void *key); /* XXX DEBUG */
 
 #endif /* !__key_h__ */
-
-
