@@ -20,6 +20,8 @@
 #include "assert.h"
 #include "key.h"
 
+// I took the inspiration for this enum type from Todd Miller's implementation:
+// http://www.opensource.apple.com/source/sudo/sudo-46/src/redblack.h
 enum color
 {
 	red,
@@ -28,7 +30,7 @@ enum color
 
 struct node
 {
-	void *key;
+	void *key; // 'key' holds the actual data.
 	struct node *left;
 	struct node *right;
 	struct node *father;
@@ -71,42 +73,63 @@ bool rbtree_empty(struct rbtree *tree)
 	return tree->root->left == tree->nil;
 }
 
-void rbtree_rotate_right(struct rbtree *tree, struct node *n)
+/*
+ * rbtree_rotate_right shifts a given subtree to the right. For example, with
+ * rbtree_rotate_right(x), the left tree is transformed into the right tree:
+ *
+ *         x             y
+ *        / \           / \       x and y
+ *       y   .         .   x      swapped
+ *      / \               / \
+ *     .   z             z   .
+ *
+ */
+void rbtree_rotate_right(struct rbtree *tree, struct node *x)
 {
-	struct node *m = n->left;
+	struct node *y = x->left;
 
-	n->left = m->right;	   /* on bouge le noeud qui bouge de gauche à droite (B) */
-	m->father = n->father; /* on modifie aussi son père */
+	x->left = y->right;	   /* Swap left and right nodes. (B) */
+	y->father = x->father; /* Swap left and right fathers. */
 
-	if (n->left != tree->nil) /* on remet le bon pere à B */
-		n->left->father = n;
+	if (x->left != tree->nil) /* Check that  à B */
+		x->left->father = x;
 
-	if (n->father->left == n) /* le lien vers le fils de la racine est modifie */
-		n->father->left = m;
+	if (x->father->left == x) /* le lien vers le fils de la racine est modifie */
+		x->father->left = y;
 	else
-		n->father->right = m;
-	m->right = n; /* inversement des liens pere-fils */
-	n->father = m;
+		x->father->right = y;
+	y->right = x; /* inversement des liens pere-fils */
+	x->father = y;
 	//	printf("Rotation droite sur %d\n",keyPut(n->key)); /* XXX DEBUG */
 }
 
-void rbtree_rotate_left(struct rbtree *tree, struct node *n)
+/*
+ * rbtree_rotate_left is the symetry of rbtree_rotate_right. For example, with
+ * rbtree_rotate_left(x), the left tree is transformed into the right tree:
+ *
+ *       x               y
+ *      / \             / \     x and y
+ *     .   y           x   .    swapped
+ *        / \         / \
+ *       z   .       .   z
+ */
+void rbtree_rotate_left(struct rbtree *tree, struct node *x)
 {
-	struct node *m = n->right;
+	struct node *y = x->right;
 
-	n->right = m->left; /* on s'occupe de B qui change de pere */
-	m->father = n->father;
+	x->right = y->left; /* on s'occupe de B qui change de pere */
+	y->father = x->father;
 
-	if (n->right != tree->nil) /* on modif le pere de B aussi */
-		n->right->father = n;
+	if (x->right != tree->nil) /* on modif le pere de B aussi */
+		x->right->father = x;
 
-	if (n->father->left == n) /* on modifie la racine */
-		n->father->left = m;
+	if (x->father->left == x) /* on modifie la racine */
+		x->father->left = y;
 	else
-		n->father->right = m;
+		x->father->right = y;
 
-	m->left = n; /* on modif le lien etre m et n */
-	n->father = m;
+	y->left = x; /* on modif le lien etre m et n */
+	x->father = y;
 	//	printf("Rotation gauche sur %d\n",keyPut(n->key)); /* XXX DEBUG */
 }
 
