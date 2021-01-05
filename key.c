@@ -16,20 +16,20 @@
 #include <stdio.h>
 #include <assert.h>
 
-void *keyCreer(int valeur)
+void *key_create(int valeur)
 {
 	int *key = (int *)malloc(sizeof(int));
 	*key = valeur;
 	return key;
 }
 
-void keySuppr(void *key)
+void key_delete(void *key)
 {
 	assert(key != NULL);
 	free(key);
 }
 
-int keyCmp(const void *key1, const void *key2)
+int key_cmp(const void *key1, const void *key2)
 {
 	assert(key1 != NULL && key2 != NULL);
 	int *a = (int *)key1;
@@ -37,7 +37,7 @@ int keyCmp(const void *key1, const void *key2)
 	return *a < *b;
 }
 
-int keyEqual(const void *key1, const void *key2)
+int key_equal(const void *key1, const void *key2)
 {
 	assert(key1 != NULL && key2 != NULL);
 	int *a = (int *)key1;
@@ -45,7 +45,7 @@ int keyEqual(const void *key1, const void *key2)
 	return *a == *b;
 }
 
-int keyPut(void *key)
+int key_put(void *key)
 { /* XXX DEBUG */
 	assert(key != NULL);
 	int *a = (int *)key;

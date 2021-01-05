@@ -75,54 +75,54 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	RBTree tree = rbtreeCreate(keyCmp, keyEqual);
+	struct rbtree *tree = rbtree_create(key_cmp, key_equal);
 	int N = 0;
 	int *tab[100];
 
-	tab[N++] = keyCreer(18);
-	tab[N++] = keyCreer(0);
-	tab[N++] = keyCreer(19);
-	tab[N++] = keyCreer(23);
-	tab[N++] = keyCreer(2);
-	tab[N++] = keyCreer(24);
-	tab[N++] = keyCreer(10);
-	tab[N++] = keyCreer(3);
-	tab[N++] = keyCreer(11);
-	tab[N++] = keyCreer(8);
-	tab[N++] = keyCreer(12);
-	tab[N++] = keyCreer(13);
-	tab[N++] = keyCreer(7);
-	tab[N++] = keyCreer(14);
-	tab[N++] = keyCreer(20);
-	tab[N++] = keyCreer(4);
-	tab[N++] = keyCreer(21);
-	tab[N++] = keyCreer(5);
-	tab[N++] = keyCreer(22);
-	tab[N++] = keyCreer(6);
-	tab[N++] = keyCreer(15);
-	tab[N++] = keyCreer(9);
-	tab[N++] = keyCreer(16);
-	tab[N++] = keyCreer(1);
-	tab[N++] = keyCreer(17);
+	tab[N++] = key_create(18);
+	tab[N++] = key_create(0);
+	tab[N++] = key_create(19);
+	tab[N++] = key_create(23);
+	tab[N++] = key_create(2);
+	tab[N++] = key_create(24);
+	tab[N++] = key_create(10);
+	tab[N++] = key_create(3);
+	tab[N++] = key_create(11);
+	tab[N++] = key_create(8);
+	tab[N++] = key_create(12);
+	tab[N++] = key_create(13);
+	tab[N++] = key_create(7);
+	tab[N++] = key_create(14);
+	tab[N++] = key_create(20);
+	tab[N++] = key_create(4);
+	tab[N++] = key_create(21);
+	tab[N++] = key_create(5);
+	tab[N++] = key_create(22);
+	tab[N++] = key_create(6);
+	tab[N++] = key_create(15);
+	tab[N++] = key_create(9);
+	tab[N++] = key_create(16);
+	tab[N++] = key_create(1);
+	tab[N++] = key_create(17);
 
 	for (i = 0; i < N; i++)
 	{
-		rbtreeInsert(tree, tab[i]);
-		rbtreeToDot(tree, racine, dossier);
+		rbtree_insert(tree, tab[i]);
+		rbtree_to_dot(tree, racine, dossier);
 		if (mode & VERBOSE)
-			rbtreeMapDebug(tree);
+			rbtree_map_debug(tree);
 	}
 
 	for (i = i - 1; i >= 0; i--)
 	{
 		if (mode & VERBOSE)
-			printf("On supprime %d \n", keyPut(tab[i]));
-		rbtreeRemove(tree, tab[i]);
-		if (!rbtreeEmpty(tree))
+			printf("On supprime %d \n", key_put(tab[i]));
+		rbtree_remove(tree, tab[i]);
+		if (!rbtree_empty(tree))
 		{
-			rbtreeToDot(tree, racine, dossier);
+			rbtree_to_dot(tree, racine, dossier);
 			if (mode & VERBOSE)
-				rbtreeMapDebug(tree);
+				rbtree_map_debug(tree);
 		}
 	}
 

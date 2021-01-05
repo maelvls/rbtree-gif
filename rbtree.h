@@ -14,27 +14,26 @@
 #ifndef __rbtree_h__
 #define __rbtree_h__
 
-#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+
 #include "queue.h"
 
-typedef struct _rbtree *RBTree;
-typedef struct _node *Node;
+#define rb_first(tree) ((tree)->root->left)
+#define rb_grandparent(node) ((node)->father->father)
+#define rb_exists(node) ((node)->father != (node))
+#define rb_is_leaf(node) ((node)->left == (node)->right)
 
-#define rbfirst(tree) ((tree)->root->left)
-#define rbgrandpa(node) ((node)->father->father)
-#define rbExists(node) ((node)->father != (node))
-#define rbIsLeaf(node) ((node)->left == (node)->right)
+struct rbtree *rbtree_create(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *));
 
-RBTree rbtreeCreate(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *));
+bool rbtree_empty(struct rbtree *tree);
 
-int rbtreeEmpty(RBTree tree);
+void rbtree_insert(struct rbtree *tree, void *data);
+void rbtree_classic_insert_debug(struct rbtree *tree, void *data);
 
-void rbtreeInsert(RBTree tree, void *data);
-void rbtreeClassicInsertDebug(RBTree tree, void *data);
+void rbtree_to_dot(struct rbtree *tree, const char *racine, const char *dossier);
+void rbtree_map_debug(struct rbtree *tree);
 
-void rbtreeToDot(RBTree tree, const char *racine, const char *dossier);
-void rbtreeMapDebug(RBTree tree);
-
-void rbtreeRemove(RBTree tree, void *data);
+void rbtree_remove(struct rbtree *tree, void *data);
 
 #endif /* !__rbtree_h__ */

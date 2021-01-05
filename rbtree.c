@@ -12,49 +12,49 @@
  * =========================================================== */
 
 #include "rbtree.h"
-#include <stdio.h>
-#include <assert.h>
+
+#include "assert.h"
 #include "key.h"
 
-typedef enum _color
+enum color
 {
 	red,
 	black
-} Color;
-
-struct _node
-{
-	void *key;
-	struct _node *left;
-	struct _node *right;
-	struct _node *father;
-	Color color;
 };
 
-struct _rbtree
+struct node
+{
+	void *key;
+	struct node *left;
+	struct node *right;
+	struct node *father;
+	enum color color;
+};
+
+struct rbtree
 {
 	int (*cmp)(const void *, const void *);
 	int (*equal)(const void *, const void *);
-	struct _node *root;
-	struct _node *nil; /* sentinelle, initialisée noire */
+	struct node *root;
+	struct node *nil; /* sentinelle, initialisée noire */
 };
 
-void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather);
+void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, struct node *replace_father);
 
-RBTree rbtreeCreate(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *))
+struct rbtree *rbtree_create(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *))
 {
-	RBTree tree = (RBTree)malloc(sizeof(struct _rbtree));
+	struct rbtree *tree = (struct rbtree *)malloc(sizeof(struct rbtree));
 	tree->cmp = cmp;
 	tree->equal = equal;
 
 	/* ============ création du nil ============ */
-	tree->nil = (Node)malloc(sizeof(struct _node));
+	tree->nil = (struct node *)malloc(sizeof(struct node));
 	tree->nil->left = tree->nil->right = tree->nil->father = tree->nil;
 	tree->nil->color = black;
 	tree->nil->key = NULL;
 
 	/* ============ création du root factice ============ */
-	tree->root = (Node)malloc(sizeof(struct _node));
+	tree->root = (struct node *)malloc(sizeof(struct node));
 	tree->root->left = tree->root->right = tree->root->father = tree->nil;
 	tree->root->color = black;
 	tree->root->key = NULL;
@@ -62,14 +62,14 @@ RBTree rbtreeCreate(int (*cmp)(const void *, const void *), int (*equal)(const v
 	return (tree);
 }
 
-int rbtreeEmpty(RBTree tree)
+bool rbtree_empty(struct rbtree *tree)
 {
 	return tree->root->left == tree->nil;
 }
 
-void rbtreeRotateRight(RBTree tree, Node n)
+void rbtree_rotate_right(struct rbtree *tree, struct node *n)
 {
-	Node m = n->left;
+	struct node *m = n->left;
 
 	n->left = m->right;	   /* on bouge le noeud qui bouge de gauche à droite (B) */
 	m->father = n->father; /* on modifie aussi son père */
@@ -86,9 +86,9 @@ void rbtreeRotateRight(RBTree tree, Node n)
 	//	printf("Rotation droite sur %d\n",keyPut(n->key)); /* XXX DEBUG */
 }
 
-void rbtreeRotateLeft(RBTree tree, Node n)
+void rbtree_rotate_left(struct rbtree *tree, struct node *n)
 {
-	Node m = n->right;
+	struct node *m = n->right;
 
 	n->right = m->left; /* on s'occupe de B qui change de pere */
 	m->father = n->father;
@@ -106,7 +106,7 @@ void rbtreeRotateLeft(RBTree tree, Node n)
 	//	printf("Rotation gauche sur %d\n",keyPut(n->key)); /* XXX DEBUG */
 }
 
-Node intern_classicTreeInsert(RBTree tree, Node node, Node added, Node father)
+struct node *_classic_tree_insert(struct rbtree *tree, struct node *node, struct node *added, struct node *father)
 {
 	if (node == tree->nil)
 	{
@@ -117,44 +117,44 @@ Node intern_classicTreeInsert(RBTree tree, Node node, Node added, Node father)
 	else
 	{
 		if ((*tree->cmp)(added->key, node->key))
-			node->left = intern_classicTreeInsert(tree, node->left, added, node);
+			node->left = _classic_tree_insert(tree, node->left, added, node);
 		else
-			node->right = intern_classicTreeInsert(tree, node->right, added, node);
+			node->right = _classic_tree_insert(tree, node->right, added, node);
 		return (node);
 	}
 }
 
-void rbtreeClassicTreeInsert(RBTree tree, Node added)
+void rbtreeClassicTreeInsert(struct rbtree *tree, struct node *added)
 {
-	if (rbtreeEmpty(tree))
-		tree->root->left = intern_classicTreeInsert(tree, tree->root->left, added, tree->root);
+	if (rbtree_empty(tree))
+		tree->root->left = _classic_tree_insert(tree, tree->root->left, added, tree->root);
 	else
-		intern_classicTreeInsert(tree, tree->root->left, added, tree->root);
+		_classic_tree_insert(tree, tree->root->left, added, tree->root);
 }
 
-void rbtreeInsert(RBTree tree, void *data)
+void rbtree_insert(struct rbtree *tree, void *data)
 {
 	/* ============ Phase 1 : ajout classique ============ */
 
-	Node added = (Node)malloc(sizeof(struct _node));
+	struct node *added = (struct node *)malloc(sizeof(struct node));
 	added->key = data;
 	added->left = added->right = tree->nil;
 	added->color = red;
 	rbtreeClassicTreeInsert(tree, added);
 
-	Node uncle;
+	struct node *uncle;
 	/* ============ Phase 2 : gestion des clashs ============ */
 	while (added->father->color == red)
 	{ /* on remonte deux generations à chaque fois */
 		if (added->father == added->father->father->left)
 		{ /* ==== CAS GAUCHE ==== */
-			uncle = rbgrandpa(added)->right;
+			uncle = rb_grandparent(added)->right;
 			/* ============ Cas 1 : l'oncle est rouge, on recolorie ============ */
 			if (uncle->color == red)
 			{
 				added->father->color = uncle->color = black;
-				rbgrandpa(added)->color = red;
-				added = rbgrandpa(added); /* on remonte de deux generations car c'est clean */
+				rb_grandparent(added)->color = red;
+				added = rb_grandparent(added); /* on remonte de deux generations car c'est clean */
 			}
 			else
 			{
@@ -166,38 +166,38 @@ void rbtreeInsert(RBTree tree, void *data)
 				}
 				/* ============ Cas 2 : l'oncle est noir, coloriage+rota============ */
 				added->father->color = black; /* on echange les couleurs */
-				rbgrandpa(added)->color = red;
-				rbtreeRotateRight(tree, rbgrandpa(added));
+				rb_grandparent(added)->color = red;
+				rb_tree_rotate_right(tree, rb_grandparent(added));
 			}
 		}
 		else
 		{ /* ==== CAS DROIT ==== */
-			uncle = rbgrandpa(added)->left;
+			uncle = rb_grandparent(added)->left;
 			if (uncle->color == red)
 			{
 				added->father->color = uncle->color = black;
-				rbgrandpa(added)->color = red;
-				added = rbgrandpa(added); /* on remonte de deux generations car c'est clean */
+				rb_grandparent(added)->color = red;
+				added = rb_grandparent(added); /* on remonte de deux generations car c'est clean */
 			}
 			else
 			{
 				if (added == added->father->left)
 				{
 					added = added->father;
-					rbtreeRotateRight(tree, added);
+					rb_tree_rotate_right(tree, added);
 				}
 				added->father->color = black;
-				rbgrandpa(added)->color = red;
-				rbtreeRotateLeft(tree, rbgrandpa(added));
+				rb_grandparent(added)->color = red;
+				rbtreeRotateLeft(tree, rb_grandparent(added));
 			}
 		}
 	}
-	rbfirst(tree)->color = black;
+	rb_first(tree)->color = black;
 }
 
-void rbtreeToDot(RBTree tree, const char *racine, const char *dossier)
+void rbtree_to_dot(struct rbtree *tree, const char *racine, const char *dossier)
 {
-	assert(!rbtreeEmpty(tree));
+	assert(!rbtree_empty(tree));
 
 	static int numerofichier = 0;
 	char final[30];
@@ -206,115 +206,115 @@ void rbtreeToDot(RBTree tree, const char *racine, const char *dossier)
 
 	fprintf(fd, "digraph G { \n");
 
-	Node node;
-	QUEUE queue;
-	queueCreate(&queue);
-	queueAdd(queue, rbfirst(tree));
+	struct node *node;
+	struct queue *queue;
+	queue_new(&queue);
+	queue_add(queue, rb_first(tree));
 	do
 	{
-		node = queueRemove(queue);
+		node = queue_remove(queue);
 
 		if (node->color == red)
-			fprintf(fd, "\t%d [color=red];\n", keyPut(node->key));
+			fprintf(fd, "\t%d [color=red];\n", key_put(node->key));
 		else
-			fprintf(fd, "\t%d [color=black];\n", keyPut(node->key));
+			fprintf(fd, "\t%d [color=black];\n", key_put(node->key));
 
 		if (node->left != tree->nil)
 		{
-			fprintf(fd, "\t%d -> %d;\n", keyPut(node->key), keyPut(node->left->key));
+			fprintf(fd, "\t%d -> %d;\n", key_put(node->key), key_put(node->left->key));
 			if (node->left->color == red)
-				fprintf(fd, "\t%d [color=red];\n", keyPut(node->left->key));
+				fprintf(fd, "\t%d [color=red];\n", key_put(node->left->key));
 			else
-				fprintf(fd, "\t%d [color=black];\n", keyPut(node->left->key));
+				fprintf(fd, "\t%d [color=black];\n", key_put(node->left->key));
 		}
 		if (node->right != tree->nil)
 		{
-			fprintf(fd, "\t%d -> %d;\n", keyPut(node->key), keyPut(node->right->key));
+			fprintf(fd, "\t%d -> %d;\n", key_put(node->key), key_put(node->right->key));
 			if (node->right->color == red)
-				fprintf(fd, "\t%d [color=red];\n", keyPut(node->right->key));
+				fprintf(fd, "\t%d [color=red];\n", key_put(node->right->key));
 			else
-				fprintf(fd, "\t%d [color=black];\n", keyPut(node->right->key));
+				fprintf(fd, "\t%d [color=black];\n", key_put(node->right->key));
 		}
 
 		if (node->left != tree->nil)
-			queueAdd(queue, node->left);
+			queue_add(queue, node->left);
 		if (node->right != tree->nil)
-			queueAdd(queue, node->right);
+			queue_add(queue, node->right);
 
-	} while (!queueEmpty(queue));
+	} while (!queue_empty(queue));
 
 	fprintf(fd, "}\n");
 	fclose(fd);
 }
 
-void rbtreeMapDebug(RBTree tree)
+void rbtree_map_debug(struct rbtree *tree)
 {
-	assert(!rbtreeEmpty(tree));
-	Node node;
-	QUEUE queue;
-	queueCreate(&queue);
-	queueAdd(queue, rbfirst(tree));
+	assert(!rbtree_empty(tree));
+	struct node *node;
+	struct queue *queue;
+	queue_new(&queue);
+	queue_add(queue, rb_first(tree));
 	printf("\033[01;35m==== Début de l'arbre ====\n\033[0m");
 	do
 	{
-		node = queueRemove(queue);
-		if (rbExists(node->left) || rbExists(node->right) || rbfirst(tree) == node)
+		node = queue_remove(queue);
+		if (rb_exists(node->left) || rb_exists(node->right) || rb_first(tree) == node)
 		{
 			if (node->father != tree->root)
-				printf("(pere: %d)", keyPut(node->father->key));
+				printf("(pere: %d)", key_put(node->father->key));
 			if (node->color == red)
 				printf("\033[01;31m");
-			if (rbfirst(tree) == node)
+			if (rb_first(tree) == node)
 				printf("\033[01;32m");
-			printf("Noeud %d\033[0m", keyPut(node->key));
+			printf("Noeud %d\033[0m", key_put(node->key));
 
-			if (rbExists(node->left))
+			if (rb_exists(node->left))
 			{
 				if (node->left->color == red)
 					printf("\033[01;31m");
 				printf(", ");
 				if (node->left->father != tree->root)
-					printf("(pere: %d) ", keyPut(node->left->father->key));
-				printf("%d fils gauche\033[0m", keyPut(node->left->key));
+					printf("(pere: %d) ", key_put(node->left->father->key));
+				printf("%d fils gauche\033[0m", key_put(node->left->key));
 			}
-			if (rbExists(node->right))
+			if (rb_exists(node->right))
 			{
 				printf(", ");
 				if (node->right->color == red)
 					printf("\033[01;31m");
 				if (node->right->father != tree->root)
-					printf("(pere: %d) ", keyPut(node->right->father->key));
-				printf("%d fils droit\033[0m", keyPut(node->right->key));
+					printf("(pere: %d) ", key_put(node->right->father->key));
+				printf("%d fils droit\033[0m", key_put(node->right->key));
 			}
 			printf("\n");
 		}
 
 		if (node->left != tree->nil)
-			queueAdd(queue, node->left);
+			queue_add(queue, node->left);
 		if (node->right != tree->nil)
-			queueAdd(queue, node->right);
+			queue_add(queue, node->right);
 
-	} while (!queueEmpty(queue));
+	} while (!queue_empty(queue));
 	printf("\n");
 }
 
 /* retourne si le noeud supprime etait rouge ET le noeud remplacant*/
-void rbtreeRemove(RBTree tree, void *data)
+void rbtree_remove(struct rbtree *tree, void *data)
 {
-	Node replace, replacefather;
-	Node node = rbfirst(tree);
+	struct node *replace, *replace_father;
+	struct node *node = rb_first(tree);
 	while (!(*tree->equal)(node->key, data))
 	{
 		node = (*tree->cmp)(node->key, data) ? node->right : node->left;
 	}
 	/* node est le noeud à supprimer */
-	if (rbIsLeaf(node))
+	if (rb_is_leaf(node))
 	{
 		if (node->father->right == node)
 			node->father->right = tree->nil;
 		else
 			node->father->left = tree->nil;
-		replacefather = node->father;
+		replace_father = node->father;
 		replace = tree->nil;
 	}
 	else
@@ -325,9 +325,9 @@ void rbtreeRemove(RBTree tree, void *data)
 				node->father->right = node->right;
 			else
 				node->father->left = node->right;
-			if (rbExists(node->right))
+			if (rb_exists(node->right))
 				node->right->father = node->father; /* XXX AJOUTE */
-			replacefather = node->father;
+			replace_father = node->father;
 			replace = node->right;
 		}
 		else if (node->right == tree->nil)
@@ -336,61 +336,61 @@ void rbtreeRemove(RBTree tree, void *data)
 				node->father->right = node->left;
 			else
 				node->father->left = node->left;
-			if (rbExists(node->left))
+			if (rb_exists(node->left))
 				node->left->father = node->father; /* XXX AJOUTE */
-			replacefather = node->father;
+			replace_father = node->father;
 			replace = node->left;
 		}
 		else
 		{ /* ==== deux noeuds  ==== */
-			Node temp = node->right;
+			struct node *temp = node->right;
 			while (temp->left != tree->nil) /* une fois à droite puis tout à gauche */
 				temp = temp->left;
 			node->key = temp->key;
 			if (temp->father->left == temp)
 			{
 				temp->father->left = temp->right; /* on raccroche l'hypothetique fils droit de temp */
-				if (rbExists(temp->right))
+				if (rb_exists(temp->right))
 					temp->right->father = temp->father;
 			}
 			else
 			{
 				temp->father->right = temp->right; /* si temp est juste à droite de node, on raccroche */
-				if (rbExists(temp->right))
+				if (rb_exists(temp->right))
 					temp->right->father = temp->father;
 			}
-			replacefather = temp->father;
+			replace_father = temp->father;
 			replace = temp->right;
 			node = temp; /* histoire d'avoir le meme node que dans le reste du code */
 		}
 	}
 	/* (x) node est le noeud qui a ete supprime, il devra etre free() XXX */
-	/* (y_father) node->father == replacefather == replace->father (à tous les coups) */
+	/* (y_father) node->father == replace_father == replace->father (à tous les coups) */
 	/* (y) replace est le noeud qui remplace celui qui a ete supprime */
-	replacefather = node->father;
+	replace_father = node->father;
 
 	if (node->color == black)
 	{
 		if (replace->color == red)
 			replace->color = black;
 		else
-			rbSolveUnbalancedTree(tree, replace, replacefather);
+			rbtree_solve_unbalanced_tree(tree, replace, replace_father);
 	}
 	free(node);
 }
 
-void swapColors(Node a, Node b)
+void swap_colors(struct node *a, struct node *b)
 {
-	Color temp = a->color;
+	enum color temp = a->color;
 	a->color = b->color;
 	b->color = temp;
 }
-void mendSentinels(RBTree tree)
+void mend_sentinels(struct rbtree *tree)
 {
 	tree->nil->color = black;
 	tree->root->color = black;
 }
-void addBlack(Node a, int *isdoubleblack)
+void add_black(struct node *a, int *isdoubleblack)
 {
 	if (a->color == red)
 	{
@@ -401,91 +401,91 @@ void addBlack(Node a, int *isdoubleblack)
 		*isdoubleblack = 1;
 }
 
-void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather)
+void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, struct node *replace_father)
 {
 	/* Soient :
 	 * y : replace, le noeud remplacé
-	 * p : replacefather, le pere du noeud remplacé
+	 * p : replace_father, le pere du noeud remplacé
 	 * f : frere de y
 	 * g : fils gauche de f
 	 * d : fils droit de f
 	 * */
 	int isdoubleblack = 1; /* etat de replace */
-	while (replace != rbfirst(tree) && isdoubleblack)
+	while (replace != rb_first(tree) && isdoubleblack)
 	{ /* on s'arretera à la racine */
 
-		if (replace == replacefather->left)
+		if (replace == replace_father->left)
 		{ /* CAS GAUCHE */
-			if (replacefather->right->color == black)
+			if (replace_father->right->color == black)
 			{ /* f est noir */
-				if (replacefather->right->right->color == black && replacefather->right->left->color == black)
+				if (replace_father->right->right->color == black && replace_father->right->left->color == black)
 				{ /* CAS 1.A */ /*(g et d sont noirs)*/
 					//printf("Cas 1.A gauche\n");
-					replace->color = black;					 /* y devient simple noir */
-					replacefather->right->color = red;		 /* f devient rouge */
-					addBlack(replacefather, &isdoubleblack); /* p devient double noir */
+					replace->color = black;					   /* y devient simple noir */
+					replace_father->right->color = red;		   /* f devient rouge */
+					add_black(replace_father, &isdoubleblack); /* p devient double noir */
 
-					replace = replacefather; /* y devient p */
-					replacefather = replace->father;
+					replace = replace_father; /* y devient p */
+					replace_father = replace->father;
 				}
-				else if (replacefather->right->right->color == red)
+				else if (replace_father->right->right->color == red)
 				{ /* CAS 1.B */
 					//printf("Cas 1.B gauche\n");
-					swapColors(replacefather, replacefather->right); /* f prend la couleur de p */
-					replacefather->right->right->color = black;		 /* d devient noir */
-					replacefather->color = black;					 /* p devient noir */
-					rbtreeRotateLeft(tree, replacefather);			 /* rotation gauche en p */
-					isdoubleblack = 0;								 /* y devient noir */
-					mendSentinels(tree);
+					swap_colors(replace_father, replace_father->right); /* f prend la couleur de p */
+					replace_father->right->right->color = black;		/* d devient noir */
+					replace_father->color = black;						/* p devient noir */
+					rbtreeRotateLeft(tree, replace_father);				/* rotation gauche en p */
+					isdoubleblack = 0;									/* y devient noir */
+					mend_sentinels(tree);
 					return;
 				}
-				else if (replacefather->right->left->color == red && replacefather->right->right->color == black)
+				else if (replace_father->right->left->color == red && replace_father->right->right->color == black)
 				{ /* CAS 1.C */
 					//printf("Cas 1.C gauche\n"); /* f est noir, g est rouge, d est noir */
-					swapColors(replacefather->right->left, replacefather->right); /* g devient noir, f rouge */
-					rbtreeRotateRight(tree, replacefather->right);				  /* rotation droite en f */
-																				  /* la prochaine boucle retournera sur 1.B */
+					swap_colors(replace_father->right->left, replace_father->right); /* g devient noir, f rouge */
+					rb_tree_rotate_right(tree, replace_father->right);				 /* rotation droite en f */
+																					 /* la prochaine boucle retournera sur 1.B */
 				}
 			}
 			else
 			{ /* f est rouge */
 				//printf("Cas 2 gauche\n");
-				swapColors(replacefather, replacefather->right); /* on echange les couleurs de p et f */
-				rbtreeRotateLeft(tree, replacefather);			 /* rotation gauche en p */
-																 /* on revient au cas 1 */
+				swap_colors(replace_father, replace_father->right); /* on echange les couleurs de p et f */
+				rbtreeRotateLeft(tree, replace_father);				/* rotation gauche en p */
+																	/* on revient au cas 1 */
 			}
 		}
 
 		else
 		{ /* CAS DROIT */
-			if (replacefather->left->color == black)
+			if (replace_father->left->color == black)
 			{ /* f est noir */
-				if (replacefather->left->left->color == black && replacefather->left->right->color == black)
+				if (replace_father->left->left->color == black && replace_father->left->right->color == black)
 				{ /* CAS 1.A */ /*(g et d sont noirs)*/
 					//printf("Cas 1.A droit\n");
-					replace->color = black;					 /* y devient simple noir */
-					replacefather->left->color = red;		 /* f devient rouge */
-					addBlack(replacefather, &isdoubleblack); /* p devient double noir */
+					replace->color = black;					   /* y devient simple noir */
+					replace_father->left->color = red;		   /* f devient rouge */
+					add_black(replace_father, &isdoubleblack); /* p devient double noir */
 
-					replace = replacefather; /* y devient p */
-					replacefather = replace->father;
+					replace = replace_father; /* y devient p */
+					replace_father = replace->father;
 				}
-				else if (replacefather->left->left->color == red)
+				else if (replace_father->left->left->color == red)
 				{ /* CAS 1.B */
 					//printf("Cas 1.B droit\n");
-					swapColors(replacefather, replacefather->left); /* f prend la couleur de p */
-					replacefather->left->left->color = black;		/* d devient noir */
-					replacefather->color = black;					/* p devient noir */
-					rbtreeRotateRight(tree, replacefather);			/* rotation gauche en p */
-					isdoubleblack = 0;								/* y devient noir */
-					mendSentinels(tree);
+					swap_colors(replace_father, replace_father->left); /* f prend la couleur de p */
+					replace_father->left->left->color = black;		   /* d devient noir */
+					replace_father->color = black;					   /* p devient noir */
+					rb_tree_rotate_right(tree, replace_father);		   /* rotation gauche en p */
+					isdoubleblack = 0;								   /* y devient noir */
+					mend_sentinels(tree);
 					return;
 				}
-				else if (replacefather->left->right->color == red && replacefather->left->left->color == black)
+				else if (replace_father->left->right->color == red && replace_father->left->left->color == black)
 				{ /* CAS 1.C */
 					//printf("Cas 1.C droit\n"); /* f est noir, g est rouge, d est noir */
-					swapColors(replacefather->left->right, replacefather->left); /* g devient noir, f rouge */
-					rbtreeRotateLeft(tree, replacefather->left);				 /* rotation droite en f */
+					swap_colors(replace_father->left->right, replace_father->left); /* g devient noir, f rouge */
+					rbtreeRotateLeft(tree, replace_father->left);					/* rotation droite en f */
 
 					/* la prochaine boucle retournera sur 1.B */
 				}
@@ -493,13 +493,13 @@ void rbSolveUnbalancedTree(RBTree tree, Node replace, Node replacefather)
 			else
 			{ /* f est rouge */
 				//printf("Cas 2 droit\n");
-				swapColors(replacefather, replacefather->left); /* on echange les couleurs de p et f */
-				rbtreeRotateRight(tree, replacefather);			/* rotation gauche en p */
-																/* on revient au cas 1 en ne changeant rien */
+				swap_colors(replace_father, replace_father->left); /* on echange les couleurs de p et f */
+				rb_tree_rotate_right(tree, replace_father);		   /* rotation gauche en p */
+																   /* on revient au cas 1 en ne changeant rien */
 			}
 		}
 	}
-	mendSentinels(tree);
+	mend_sentinels(tree);
 }
 
 /* \033[01;31m 	couleur : rouge */

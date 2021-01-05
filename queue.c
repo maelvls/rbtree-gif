@@ -10,38 +10,37 @@
 #include <assert.h>
 #include "queue.h"
 
-typedef struct _cell
+struct cell
 {
-	ITEM item;
-	struct _cell *next;
-} * CELL;
+	struct item *item;
+	struct cell *next;
+};
 
-struct _queue
+struct queue
 {
-	CELL head;
-	CELL tail;
+	struct cell *head, *tail;
 	int size;
 };
 
-void queueCreate(QUEUE *q)
+void queue_new(struct queue **q)
 {
 	// On créé un pointeur
-	*q = (QUEUE)malloc(sizeof(struct _queue));
+	*q = (struct queue *)malloc(sizeof(struct queue));
 	(*q)->head = NULL;
 	(*q)->tail = NULL;
 	(*q)->size = 0;
 }
 
-int queueEmpty(QUEUE q) { return q->head == NULL; }
-int queueFull(QUEUE q) { return malloc(sizeof(CELL)) == NULL; }
+int queue_empty(struct queue *q) { return q->head == NULL; }
+int queue_full(struct queue *q) { return malloc(sizeof(struct cell)) == NULL; }
 
-void queueAdd(QUEUE q, ITEM v)
+void queue_add(struct queue *q, struct item *v)
 {
-	assert(!queueFull(q));
-	CELL new = (CELL)malloc(sizeof(struct _cell));
+	assert(!queue_full(q));
+	struct cell *new = (struct cell *)malloc(sizeof(struct cell));
 	new->item = v;
 	new->next = NULL;
-	if (queueEmpty(q))
+	if (queue_empty(q))
 	{				   /* L'ajout se fait a la fin de la file */
 		q->tail = new; /* Pas besoin de dire que head->next = NULL */
 		q->head = new;
@@ -54,24 +53,24 @@ void queueAdd(QUEUE q, ITEM v)
 	++(q->size);
 }
 
-ITEM queueRead(QUEUE q)
+struct item *queue_read(struct queue *q)
 {
-	assert(!queueEmpty(q));
+	assert(!queue_empty(q));
 	return q->head->item;
 }
 
-ITEM queueRemove(QUEUE q)
+struct item *queue_remove(struct queue *q)
 {
-	assert(!queueEmpty(q));
-	CELL temp = q->head;
-	ITEM item = temp->item;
+	assert(!queue_empty(q));
+	struct cell *temp = q->head;
+	struct item *item = temp->item;
 	q->head = q->head->next;
 	free(temp);
 	--(q->size);
 	return (item);
 }
 
-int queueSize(QUEUE q)
+int queue_size(struct queue *q)
 {
 	return q->size;
 }
