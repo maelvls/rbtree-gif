@@ -1,14 +1,18 @@
 /*
-	queue.c
-	------
-
-	Par Mael Valais (mael.valais@univ-tlse3.fr) le 14-02-2013
-
+ * queue.c
+ *
+ * A naive queue implementation. Each push operation allocates a new item
+ * to the heap. Not great, but works fine for the purposes of this tiny
+ * project.
+ *
+ * Copyright (C) 2013-2020  Mael Valais
  */
 
-#include <stdlib.h> /* Pour malloc */
-#include <assert.h>
 #include "queue.h"
+
+#include <stdlib.h> /* malloc */
+#include <assert.h>
+#include <errno.h>
 
 struct cell
 {
@@ -24,7 +28,6 @@ struct queue
 
 void queue_new(struct queue **q)
 {
-	// On créé un pointeur
 	*q = (struct queue *)malloc(sizeof(struct queue));
 	(*q)->head = NULL;
 	(*q)->tail = NULL;
@@ -32,12 +35,18 @@ void queue_new(struct queue **q)
 }
 
 int queue_empty(struct queue *q) { return q->head == NULL; }
-int queue_full(struct queue *q) { return malloc(sizeof(struct cell)) == NULL; }
 
-void queue_add(struct queue *q, struct item *v)
+/*
+ * Returns 0 on success, or an error code otherwise.
+ */
+int queue_add(struct queue *q, void *v)
 {
-	assert(!queue_full(q));
 	struct cell *new = (struct cell *)malloc(sizeof(struct cell));
+	if (new < 0)
+	{
+		return -ENOMEM;
+	}
+
 	new->item = v;
 	new->next = NULL;
 	if (queue_empty(q))
@@ -51,15 +60,17 @@ void queue_add(struct queue *q, struct item *v)
 		q->tail = new;
 	}
 	++(q->size);
+
+	return 0;
 }
 
-struct item *queue_read(struct queue *q)
+void *queue_read(struct queue *q)
 {
 	assert(!queue_empty(q));
 	return q->head->item;
 }
 
-struct item *queue_remove(struct queue *q)
+void *queue_remove(struct queue *q)
 {
 	assert(!queue_empty(q));
 	struct cell *temp = q->head;

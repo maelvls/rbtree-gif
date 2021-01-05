@@ -1,59 +1,60 @@
-/* ===========================================================
+/*
+ * main.c
  *
- *       Filename:  main.c
+ * This is the rbtree_to_dot program. This program does operations to a
+ * simple red-black tree in step-by-step mode. These operations (additions
+ * and removals) are hardcoded below. The program outputs each step of the
+ * tree as dot files (e.g., it shows the rebalancing algorithm) that can be
+ * then converted to a nice GIF that shows how a red-black tree evolves.
  *
- *    Description:
- *
- *        Created:  06-04-2013 22:39
- *
- *         Author:  Mael Valais
- *         Mail  :	mael.valais@univ-tlse3.fr
- *
- * =========================================================== */
+ * Copyright (C) 2013-2020  Mael Valais
+ *  */
 
-#include "key.h"
-#include "rbtree.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <dirent.h>
 
-#define DOSSIER_DOT "dot"
-#define RACINE_DOT "step_"
+#include "rbtree.h"
+#include "key.h"
+
+#define DOTFILES_DIR "dot"
+#define DOTFILES_PREFIX "step_"
 
 #define VERBOSE 1
 
 int main(int argc, const char *argv[])
 {
-	char dossier[30] = DOSSIER_DOT;
-	char racine[30] = RACINE_DOT;
+	char dotfiles_dir[30] = DOTFILES_DIR;
+	char dotfiles_prefix[30] = DOTFILES_PREFIX;
 	int i, mode = 0;
 	DIR *d;
 
-	/* ==== traitement des parametres ==== */
+	// Parse command-line arguments.
 	for (i = 1; i < argc; ++i)
 	{
 		if (argv[i][0] != '-')
 		{
-			strcpy(dossier, argv[i]); /* c'est le nom du dossier */
+			strcpy(dotfiles_dir, argv[i]); /* c'est le nom du dossier */
 		}
 		if (0 == strcmp(argv[i], "-h") || 0 == strcmp(argv[i], "--help"))
 		{
-			printf("Usage: %s [-h][dossier][-r racine] \n", argv[0]);
-			printf("Par defaut, le dossier est '%s'\n", DOSSIER_DOT);
-			printf("-h ou --help pour l'aide\n");
+			printf("usage: %s [-h] [output_dotfiles_dir] [-r output_dotfiles_prefix] \n", argv[0]);
+			printf("\n");
+			printf("By default, the output dir is '%s'.\n", DOTFILES_DIR);
+			printf("Run -h or --help to see more.\n");
 			exit(0);
 		}
 		if (strcmp(argv[i], "-r") == 0)
 		{
 			if (i + 1 < argc)
 			{
-				strcpy(racine, argv[i + 1]);
+				strcpy(dotfiles_prefix, argv[i + 1]);
 			}
 			else
 			{
-				fprintf(stderr, "Erreur: l'option -r doit suivre d'un nom de racine (-h pour l'aide)\n");
+				fprintf(stderr, "error: the -r flag takes an argument\n");
 				exit(1);
 			}
 			i++;
@@ -65,17 +66,17 @@ int main(int argc, const char *argv[])
 	}
 
 	/* ==== verif des parametres ==== */
-	if ((d = opendir(dossier)))
+	if ((d = opendir(dotfiles_dir)))
 	{
 		closedir(d);
 	}
 	else
 	{
-		fprintf(stderr, "Erreur: le dossier '%s' n'existe pas - veuillez le creer (-h pour l'aide)\n", dossier);
+		fprintf(stderr, "error: the directory '%s' does not exist, please create it first\n", dotfiles_dir);
 		exit(1);
 	}
 
-	struct rbtree *tree = rbtree_create(key_cmp, key_equal);
+	struct rbtree *tree = rbtree_new(key_cmp, key_equal);
 	int N = 0;
 	int *tab[100];
 
@@ -108,7 +109,7 @@ int main(int argc, const char *argv[])
 	for (i = 0; i < N; i++)
 	{
 		rbtree_insert(tree, tab[i]);
-		rbtree_to_dot(tree, racine, dossier);
+		rbtree_to_dot(tree, dotfiles_prefix, dotfiles_dir);
 		if (mode & VERBOSE)
 			rbtree_map_debug(tree);
 	}
@@ -116,11 +117,11 @@ int main(int argc, const char *argv[])
 	for (i = i - 1; i >= 0; i--)
 	{
 		if (mode & VERBOSE)
-			printf("On supprime %d \n", key_put(tab[i]));
+			printf("removing %d \n", key_put(tab[i]));
 		rbtree_remove(tree, tab[i]);
 		if (!rbtree_empty(tree))
 		{
-			rbtree_to_dot(tree, racine, dossier);
+			rbtree_to_dot(tree, dotfiles_prefix, dotfiles_dir);
 			if (mode & VERBOSE)
 				rbtree_map_debug(tree);
 		}

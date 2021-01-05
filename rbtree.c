@@ -13,6 +13,8 @@
 
 #include "rbtree.h"
 
+#include <stdlib.h>
+
 #include "assert.h"
 #include "key.h"
 
@@ -41,7 +43,7 @@ struct rbtree
 
 void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, struct node *replace_father);
 
-struct rbtree *rbtree_create(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *))
+struct rbtree *rbtree_new(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *))
 {
 	struct rbtree *tree = (struct rbtree *)malloc(sizeof(struct rbtree));
 	tree->cmp = cmp;
@@ -124,7 +126,7 @@ struct node *_classic_tree_insert(struct rbtree *tree, struct node *node, struct
 	}
 }
 
-void rbtreeClassicTreeInsert(struct rbtree *tree, struct node *added)
+void rbtree_classic_tree_insert(struct rbtree *tree, struct node *added)
 {
 	if (rbtree_empty(tree))
 		tree->root->left = _classic_tree_insert(tree, tree->root->left, added, tree->root);
@@ -140,7 +142,7 @@ void rbtree_insert(struct rbtree *tree, void *data)
 	added->key = data;
 	added->left = added->right = tree->nil;
 	added->color = red;
-	rbtreeClassicTreeInsert(tree, added);
+	rbtree_classic_tree_insert(tree, added);
 
 	struct node *uncle;
 	/* ============ Phase 2 : gestion des clashs ============ */
@@ -162,12 +164,12 @@ void rbtree_insert(struct rbtree *tree, void *data)
 				if (added == added->father->right)
 				{
 					added = added->father;
-					rbtreeRotateLeft(tree, added); /* added est de nouveau petit fils */
+					rbtree_rotate_left(tree, added); /* added est de nouveau petit fils */
 				}
 				/* ============ Cas 2 : l'oncle est noir, coloriage+rota============ */
 				added->father->color = black; /* on echange les couleurs */
 				rb_grandparent(added)->color = red;
-				rb_tree_rotate_right(tree, rb_grandparent(added));
+				rbtree_rotate_right(tree, rb_grandparent(added));
 			}
 		}
 		else
@@ -184,11 +186,11 @@ void rbtree_insert(struct rbtree *tree, void *data)
 				if (added == added->father->left)
 				{
 					added = added->father;
-					rb_tree_rotate_right(tree, added);
+					rbtree_rotate_right(tree, added);
 				}
 				added->father->color = black;
 				rb_grandparent(added)->color = red;
-				rbtreeRotateLeft(tree, rb_grandparent(added));
+				rbtree_rotate_left(tree, rb_grandparent(added));
 			}
 		}
 	}
@@ -434,7 +436,7 @@ void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, str
 					swap_colors(replace_father, replace_father->right); /* f prend la couleur de p */
 					replace_father->right->right->color = black;		/* d devient noir */
 					replace_father->color = black;						/* p devient noir */
-					rbtreeRotateLeft(tree, replace_father);				/* rotation gauche en p */
+					rbtree_rotate_left(tree, replace_father);			/* rotation gauche en p */
 					isdoubleblack = 0;									/* y devient noir */
 					mend_sentinels(tree);
 					return;
@@ -443,7 +445,7 @@ void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, str
 				{ /* CAS 1.C */
 					//printf("Cas 1.C gauche\n"); /* f est noir, g est rouge, d est noir */
 					swap_colors(replace_father->right->left, replace_father->right); /* g devient noir, f rouge */
-					rb_tree_rotate_right(tree, replace_father->right);				 /* rotation droite en f */
+					rbtree_rotate_right(tree, replace_father->right);				 /* rotation droite en f */
 																					 /* la prochaine boucle retournera sur 1.B */
 				}
 			}
@@ -451,7 +453,7 @@ void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, str
 			{ /* f est rouge */
 				//printf("Cas 2 gauche\n");
 				swap_colors(replace_father, replace_father->right); /* on echange les couleurs de p et f */
-				rbtreeRotateLeft(tree, replace_father);				/* rotation gauche en p */
+				rbtree_rotate_left(tree, replace_father);			/* rotation gauche en p */
 																	/* on revient au cas 1 */
 			}
 		}
@@ -476,7 +478,7 @@ void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, str
 					swap_colors(replace_father, replace_father->left); /* f prend la couleur de p */
 					replace_father->left->left->color = black;		   /* d devient noir */
 					replace_father->color = black;					   /* p devient noir */
-					rb_tree_rotate_right(tree, replace_father);		   /* rotation gauche en p */
+					rbtree_rotate_right(tree, replace_father);		   /* rotation gauche en p */
 					isdoubleblack = 0;								   /* y devient noir */
 					mend_sentinels(tree);
 					return;
@@ -485,7 +487,7 @@ void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, str
 				{ /* CAS 1.C */
 					//printf("Cas 1.C droit\n"); /* f est noir, g est rouge, d est noir */
 					swap_colors(replace_father->left->right, replace_father->left); /* g devient noir, f rouge */
-					rbtreeRotateLeft(tree, replace_father->left);					/* rotation droite en f */
+					rbtree_rotate_left(tree, replace_father->left);					/* rotation droite en f */
 
 					/* la prochaine boucle retournera sur 1.B */
 				}
@@ -494,7 +496,7 @@ void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, str
 			{ /* f est rouge */
 				//printf("Cas 2 droit\n");
 				swap_colors(replace_father, replace_father->left); /* on echange les couleurs de p et f */
-				rb_tree_rotate_right(tree, replace_father);		   /* rotation gauche en p */
+				rbtree_rotate_right(tree, replace_father);		   /* rotation gauche en p */
 																   /* on revient au cas 1 en ne changeant rien */
 			}
 		}

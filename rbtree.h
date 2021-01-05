@@ -24,7 +24,7 @@
 #define rb_exists(node) ((node)->father != (node))
 #define rb_is_leaf(node) ((node)->left == (node)->right)
 
-struct rbtree *rbtree_create(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *));
+struct rbtree *rbtree_new(int (*cmp)(const void *, const void *), int (*equal)(const void *, const void *));
 
 bool rbtree_empty(struct rbtree *tree);
 

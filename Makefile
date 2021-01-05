@@ -1,14 +1,9 @@
-#
-# makefile
-# Mael Valais, 2013-04-06 22:51
-#
-#
 OPT=-Wall -g
-EXEC=a.out
+EXEC=rbtree_to_dot
 
-all:main
+all: rbtree_to_dot
 
-main: main.o key.o rbtree.o queue.o
+rbtree_to_dot: main.o key.o rbtree.o queue.o
 	gcc main.o key.o rbtree.o queue.o -o $(EXEC) $(OPT)
 
 %.o: %.c
@@ -19,4 +14,3 @@ clean:
 
 # vim:ft=make
 #
-
