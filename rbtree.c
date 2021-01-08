@@ -16,9 +16,11 @@
 #include "rbtree.h"
 
 #include <stdlib.h>
+#include <stdarg.h>
+#include <assert.h>
 
-#include "assert.h"
 #include "key.h"
+#include "debug.h"
 
 // I took the inspiration for this enum type from Todd Miller's implementation:
 // http://www.opensource.apple.com/source/sudo/sudo-46/src/redblack.h
@@ -77,6 +79,7 @@ bool rbtree_empty(struct rbtree *tree)
  * rbtree_rotate_right shifts a given subtree to the right. For example, with
  * rbtree_rotate_right(x), the left tree is transformed into the right tree:
  *
+ *     input:         output:
  *         x             y
  *        / \           / \       x and y
  *       y   .         .   x      swapped
@@ -86,26 +89,30 @@ bool rbtree_empty(struct rbtree *tree)
  */
 void rbtree_rotate_right(struct rbtree *tree, struct node *x)
 {
+	debug_printf("rotate_right(%d)\n", keyPut(x->key));
+
 	struct node *y = x->left;
 
-	x->left = y->right;	   /* Swap left and right nodes. (B) */
-	y->father = x->father; /* Swap left and right fathers. */
+	x->left = y->right;
+	y->father = x->father;
 
-	if (x->left != tree->nil) /* Check that  à B */
+	if (x->left != tree->nil)
 		x->left->father = x;
 
-	if (x->father->left == x) /* le lien vers le fils de la racine est modifie */
+	if (x->father->left == x)
 		x->father->left = y;
 	else
 		x->father->right = y;
-	y->right = x; /* inversement des liens pere-fils */
+
+	y->right = x;
 	x->father = y;
-	//	printf("Rotation droite sur %d\n",keyPut(n->key)); /* XXX DEBUG */
 }
 
 /*
  * rbtree_rotate_left is the symetry of rbtree_rotate_right. For example, with
  * rbtree_rotate_left(x), the left tree is transformed into the right tree:
+ *
+ *     input:         output:
  *
  *       x               y
  *      / \             / \     x and y
@@ -115,22 +122,21 @@ void rbtree_rotate_right(struct rbtree *tree, struct node *x)
  */
 void rbtree_rotate_left(struct rbtree *tree, struct node *x)
 {
+	debug_printf("rotate_left(%d)\n", keyPut(x->key));
+
 	struct node *y = x->right;
 
-	x->right = y->left; /* on s'occupe de B qui change de pere */
+	x->right = y->left;
 	y->father = x->father;
 
-	if (x->right != tree->nil) /* on modif le pere de B aussi */
+	if (x->right != tree->nil)
 		x->right->father = x;
-
-	if (x->father->left == x) /* on modifie la racine */
+	if (x->father->left == x)
 		x->father->left = y;
 	else
 		x->father->right = y;
-
-	y->left = x; /* on modif le lien etre m et n */
+	y->left = x;
 	x->father = y;
-	//	printf("Rotation gauche sur %d\n",keyPut(n->key)); /* XXX DEBUG */
 }
 
 struct node *_classic_tree_insert(struct rbtree *tree, struct node *node, struct node *added, struct node *father)
@@ -161,61 +167,92 @@ void rbtree_classic_tree_insert(struct rbtree *tree, struct node *added)
 
 void rbtree_insert(struct rbtree *tree, void *data)
 {
-	/* ============ Phase 1 : ajout classique ============ */
-
+	/*
+	 * Step 1: classic insertion. After this step, the tree might end up
+	 * unbalanced.
+	 */
 	struct node *added = (struct node *)malloc(sizeof(struct node));
 	added->key = data;
 	added->left = added->right = tree->nil;
 	added->color = red;
 	rbtree_classic_tree_insert(tree, added);
 
+	/*
+	 * Step 2: re-balance the tree by checking for "clashes" in the
+	 * red-black-red-black alternation.
+	 */
+	struct node *cur = added;
 	struct node *uncle;
-	/* ============ Phase 2 : gestion des clashs ============ */
-	while (added->father->color == red)
-	{ /* on remonte deux generations à chaque fois */
-		if (added->father == added->father->father->left)
-		{ /* ==== CAS GAUCHE ==== */
-			uncle = rb_grandparent(added)->right;
-			/* ============ Cas 1 : l'oncle est rouge, on recolorie ============ */
+
+	/*
+	 * As long as the immediate parent of 'cur' is also red (i.e., its
+	 * color clashes with 'cur', we iterate.
+	 */
+	while (cur->father->color == red)
+	{
+		/*
+		 * The 'cur' is the left child.
+		 */
+		if (cur->father == cur->father->father->left)
+		{
+			uncle = rb_grandparent(cur)->right;
 			if (uncle->color == red)
 			{
-				added->father->color = uncle->color = black;
-				rb_grandparent(added)->color = red;
-				added = rb_grandparent(added); /* on remonte de deux generations car c'est clean */
+				/*
+				 * Case 1: the uncle is red, we re-paint it in black.
+				 */
+				cur->father->color = uncle->color = black;
+				rb_grandparent(cur)->color = red;
+
+				/*
+				 * Next iteration: we move directly to the parent's parent
+				 * since the immediate parent of 'cur' was already
+				 * processed.
+				 */
+				cur = rb_grandparent(cur);
 			}
 			else
 			{
-				/* ============ Cas 3 : l'oncle est noir, on revient sur Cas 2 ============ */
-				if (added == added->father->right)
+				/*
+				 * Case 3: the uncle is black, fall back to Case 2.
+				 */
+				if (cur == cur->father->right)
 				{
-					added = added->father;
-					rbtree_rotate_left(tree, added); /* added est de nouveau petit fils */
+					cur = cur->father;
+					rbtree_rotate_left(tree, cur); /* cur est de nouveau petit fils */
 				}
-				/* ============ Cas 2 : l'oncle est noir, coloriage+rota============ */
-				added->father->color = black; /* on echange les couleurs */
-				rb_grandparent(added)->color = red;
-				rbtree_rotate_right(tree, rb_grandparent(added));
+				/*
+				 * Case 2: the uncle is already black. We just need to swap
+				 * the color between cur's parent and cur's grand-parent
+				 * and then rotate the subtree to the right.
+				*/
+				cur->father->color = black;
+				rb_grandparent(cur)->color = red;
+				rbtree_rotate_right(tree, rb_grandparent(cur));
 			}
 		}
 		else
-		{ /* ==== CAS DROIT ==== */
-			uncle = rb_grandparent(added)->left;
+		/*
+		 * The 'cur' is the right child.
+		 */
+		{
+			uncle = rb_grandparent(cur)->left;
 			if (uncle->color == red)
 			{
-				added->father->color = uncle->color = black;
-				rb_grandparent(added)->color = red;
-				added = rb_grandparent(added); /* on remonte de deux generations car c'est clean */
+				cur->father->color = uncle->color = black;
+				rb_grandparent(cur)->color = red;
+				cur = rb_grandparent(cur);
 			}
 			else
 			{
-				if (added == added->father->left)
+				if (cur == cur->father->left)
 				{
-					added = added->father;
-					rbtree_rotate_right(tree, added);
+					cur = cur->father;
+					rbtree_rotate_right(tree, cur);
 				}
-				added->father->color = black;
-				rb_grandparent(added)->color = red;
-				rbtree_rotate_left(tree, rb_grandparent(added));
+				cur->father->color = black;
+				rb_grandparent(cur)->color = red;
+				rbtree_rotate_left(tree, rb_grandparent(cur));
 			}
 		}
 	}
@@ -281,19 +318,19 @@ void rbtree_map_debug(struct rbtree *tree)
 	struct queue *queue;
 	queue_new(&queue);
 	queue_push(queue, rb_first(tree));
-	printf("\033[01;35m==== Début de l'arbre ====\n\033[0m");
+	printf("\033[01;35m==== beginning of the tree ====\n\033[0m");
 	do
 	{
 		node = queue_pop(queue);
 		if (rb_exists(node->left) || rb_exists(node->right) || rb_first(tree) == node)
 		{
 			if (node->father != tree->root)
-				printf("(pere: %d)", key_put(node->father->key));
+				printf("(parent: %d)", key_put(node->father->key));
 			if (node->color == red)
 				printf("\033[01;31m");
 			if (rb_first(tree) == node)
 				printf("\033[01;32m");
-			printf("Noeud %d\033[0m", key_put(node->key));
+			printf("node %d\033[0m", key_put(node->key));
 
 			if (rb_exists(node->left))
 			{
@@ -301,8 +338,8 @@ void rbtree_map_debug(struct rbtree *tree)
 					printf("\033[01;31m");
 				printf(", ");
 				if (node->left->father != tree->root)
-					printf("(pere: %d) ", key_put(node->left->father->key));
-				printf("%d fils gauche\033[0m", key_put(node->left->key));
+					printf("(parent: %d) ", key_put(node->left->father->key));
+				printf("%d left child\033[0m", key_put(node->left->key));
 			}
 			if (rb_exists(node->right))
 			{
@@ -311,7 +348,7 @@ void rbtree_map_debug(struct rbtree *tree)
 					printf("\033[01;31m");
 				if (node->right->father != tree->root)
 					printf("(pere: %d) ", key_put(node->right->father->key));
-				printf("%d fils droit\033[0m", key_put(node->right->key));
+				printf("%d right child\033[0m", key_put(node->right->key));
 			}
 			printf("\n");
 		}
@@ -325,7 +362,7 @@ void rbtree_map_debug(struct rbtree *tree)
 	printf("\n");
 }
 
-/* retourne si le noeud supprime etait rouge ET le noeud remplacant*/
+/* retourne si le noeud supprime etait rouge ET le noeud remplacant */
 void rbtree_remove(struct rbtree *tree, void *data)
 {
 	struct node *replace, *replace_father;
@@ -529,8 +566,8 @@ void rbtree_solve_unbalanced_tree(struct rbtree *tree, struct node *replace, str
 	mend_sentinels(tree);
 }
 
-/* \033[01;31m 	couleur : rouge */
-/* \033[01;35m	couleur : mauve */
-/* \033[01;32m	couleur : vert */
-/* \033[01;34m	couleur : bleu */
-/* \033[0m		raz de la couleur */
+/* \033[01;31m 	red */
+/* \033[01;35m	purple */
+/* \033[01;32m	green */
+/* \033[01;34m	blue */
+/* \033[0m		end of color */
