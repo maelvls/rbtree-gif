@@ -2,11 +2,12 @@
  * A naive queue implementation.
  */
 
+typedef void item;
 struct queue;
 
-void queue_new(struct queue **q);
-int queue_empty(struct queue *q);
-int queue_add(struct queue *q, void *v);
-void *queue_remove(struct queue *q);
-void *queue_read(struct queue *q);
+struct queue *queue_new();
+int queue_is_empty(struct queue *q);
+int queue_push(struct queue *q, item *v);
+item *queue_pop(struct queue *q);
+item *queue_head(struct queue *q);
 int queue_size(struct queue *q);

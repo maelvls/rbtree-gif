@@ -236,10 +236,10 @@ void rbtree_to_dot(struct rbtree *tree, const char *racine, const char *dossier)
 	struct node *node;
 	struct queue *queue;
 	queue_new(&queue);
-	queue_add(queue, rb_first(tree));
+	queue_push(queue, rb_first(tree));
 	do
 	{
-		node = queue_remove(queue);
+		node = queue_pop(queue);
 
 		if (node->color == red)
 			fprintf(fd, "\t%d [color=red];\n", key_put(node->key));
@@ -264,11 +264,11 @@ void rbtree_to_dot(struct rbtree *tree, const char *racine, const char *dossier)
 		}
 
 		if (node->left != tree->nil)
-			queue_add(queue, node->left);
+			queue_push(queue, node->left);
 		if (node->right != tree->nil)
-			queue_add(queue, node->right);
+			queue_push(queue, node->right);
 
-	} while (!queue_empty(queue));
+	} while (!queue_is_empty(queue));
 
 	fprintf(fd, "}\n");
 	fclose(fd);
@@ -280,11 +280,11 @@ void rbtree_map_debug(struct rbtree *tree)
 	struct node *node;
 	struct queue *queue;
 	queue_new(&queue);
-	queue_add(queue, rb_first(tree));
+	queue_push(queue, rb_first(tree));
 	printf("\033[01;35m==== Début de l'arbre ====\n\033[0m");
 	do
 	{
-		node = queue_remove(queue);
+		node = queue_pop(queue);
 		if (rb_exists(node->left) || rb_exists(node->right) || rb_first(tree) == node)
 		{
 			if (node->father != tree->root)
@@ -317,11 +317,11 @@ void rbtree_map_debug(struct rbtree *tree)
 		}
 
 		if (node->left != tree->nil)
-			queue_add(queue, node->left);
+			queue_push(queue, node->left);
 		if (node->right != tree->nil)
-			queue_add(queue, node->right);
+			queue_push(queue, node->right);
 
-	} while (!queue_empty(queue));
+	} while (!queue_is_empty(queue));
 	printf("\n");
 }
 

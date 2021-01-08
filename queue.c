@@ -1,9 +1,21 @@
 /*
  * queue.c
  *
- * A naive queue implementation. Each push operation allocates a new item
- * to the heap. Not great, but works fine for the purposes of this tiny
- * project.
+ * A naive FIFO queue implementation. Not thread-safe. Each push operation
+ * allocates a new item to the heap. Not great, but works fine for the
+ * purposes of this tiny project.
+ *
+ *
+ *   tail                head
+ *  +---+---+---+---+---+---+
+ *  | 1 | 4 | 2 | 0 | 2 | 5 |
+ *  +---+---+---+---+---+---+
+ *  <---------------------->
+ *            size
+ *
+ * In this example, queue_push adds the element to the tail of the queue
+ * (leftmost element of the above diagram) and queue_pop deletes the
+ * elements at the head of the queue (rightmost element in the diagram).
  *
  * Copyright (C) 2013-2020  Mael Valais
  */
@@ -16,7 +28,7 @@
 
 struct cell
 {
-	struct item *item;
+	item *item;
 	struct cell *next;
 };
 
@@ -26,20 +38,26 @@ struct queue
 	int size;
 };
 
-void queue_new(struct queue **q)
+/*
+ * queue_new returns an empty queue.
+ */
+struct queue *queue_new()
 {
-	*q = (struct queue *)malloc(sizeof(struct queue));
-	(*q)->head = NULL;
-	(*q)->tail = NULL;
-	(*q)->size = 0;
+	struct queue *q = (struct queue *)malloc(sizeof(struct queue));
+	q->head = NULL;
+	q->tail = NULL;
+	q->size = 0;
+
+	return q;
 }
 
-int queue_empty(struct queue *q) { return q->head == NULL; }
+int queue_is_empty(struct queue *q) { return q->head == NULL; }
 
 /*
- * Returns 0 on success, or an error code otherwise.
+ * queue_push adds the given element to the tail of the queue. Returns 0 on
+ * success, or an error code otherwise.
  */
-int queue_add(struct queue *q, void *v)
+int queue_push(struct queue *q, void *new_head)
 {
 	struct cell *new = (struct cell *)malloc(sizeof(struct cell));
 	if (new < 0)
@@ -47,11 +65,11 @@ int queue_add(struct queue *q, void *v)
 		return -ENOMEM;
 	}
 
-	new->item = v;
+	new->item = new_head;
 	new->next = NULL;
-	if (queue_empty(q))
-	{				   /* L'ajout se fait a la fin de la file */
-		q->tail = new; /* Pas besoin de dire que head->next = NULL */
+	if (queue_is_empty(q))
+	{
+		q->tail = new;
 		q->head = new;
 	}
 	else
@@ -64,17 +82,25 @@ int queue_add(struct queue *q, void *v)
 	return 0;
 }
 
-void *queue_read(struct queue *q)
+/*
+ * queue_head returns the head of the queue. This function must not be
+ * called when the queue is empty.
+ */
+void *queue_head(struct queue *q)
 {
-	assert(!queue_empty(q));
+	assert(!queue_is_empty(q));
 	return q->head->item;
 }
 
-void *queue_remove(struct queue *q)
+/*
+ * queue_pop deletes and returns the head element of the queue. This
+ * function must not be called when the queue is empty.
+ */
+void *queue_pop(struct queue *q)
 {
-	assert(!queue_empty(q));
+	assert(!queue_is_empty(q));
 	struct cell *temp = q->head;
-	struct item *item = temp->item;
+	void *item = temp->item;
 	q->head = q->head->next;
 	free(temp);
 	--(q->size);
